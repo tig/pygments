@@ -147,6 +147,13 @@ namespace FearTheCowboy.Pygments {
                 _formatters.get_formatter_by_name("latex", style: GetStyleByName(styleName), full: !fragment, title: title, docclass: documentClass, linenos: lineNumbers, linenostart: lineNumberStart, linenostep: lineStep, texcomments: texComments, mathescape: mathEscape));
         }
 
+        public string HighlightToTerminal256(string sourceCode, string lexerName = null, string styleName = null, string filename = null, bool fragment = false, string title = "", bool lineNumbers = false, int lineNumberStart = 1,
+            int lineStep = 1)
+        {
+                return _highlight(sourceCode, GetLexer(lexerName, sourceCode, filename),
+                _formatters.get_formatter_by_name("terminal256", style: GetStyleByName(styleName), full: !fragment, title: title, linenos: lineNumbers, linenostart: lineNumberStart, linenostep: lineStep));
+        }
+
         public class Lexer {
             public string Name {get; internal set;}
             public IEnumerable<string> Aliases {get; internal set;}

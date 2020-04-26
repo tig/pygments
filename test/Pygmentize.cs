@@ -92,6 +92,20 @@ namespace Pyg {
                         break;
                     case "latex":
                         break;
+
+                    case "terminal256":
+                    case "console256":
+                    case "256":
+                    case "terminal16":
+                    case "console16":
+                    case "16m":
+                        foreach (var f in files)
+                        {
+                            Console.WriteLine("Highlighting : [{0}] to [{0}.ans]", f);
+                            File.WriteAllText(f + ".ans",
+                                highlighter.HighlightToTerminal256(File.ReadAllText(f), language, style, f));
+                        }
+                        break;
                     default:
                         Console.Error.WriteLine("Unknown output type '{0}' -- skipping", o);
                         break;
