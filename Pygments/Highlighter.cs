@@ -21,7 +21,7 @@ namespace FearTheCowboy.Pygments {
 
     public class Highlighter {
         public static IEnumerable<Lexer> Lexers;
-        public static IEnumerable<string> Styles;
+        public IEnumerable<string> Styles;
         private dynamic _formatters;
         private dynamic _highlight;
         private dynamic _lexers;

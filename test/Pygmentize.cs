@@ -46,17 +46,29 @@ namespace Pyg {
 
     class Pygmentize {
         static void Help() {
-            
+            Console.WriteLine("pygmentize [--liststyles | [--output=[html, bbcode, rtf, latex, terminal256] --style=<style> files]");
         }
+
+        static void ListStyles()
+        {
+            var highlighter = new Highlighter();
+            Console.WriteLine(string.Join(", ", highlighter.Styles.ToArray()));
+        }
+
 
         static void Main(string[] args)
         {
             var opts = args.Where(each => each.StartsWith("--")).Select( each=> each.TrimStart('-').ToLower()).ToArray();
             var files = args.Where(each => !each.StartsWith("--")).ToArray();
-
             
             if (files.Length == 0 || opts.ContainsAny("help", "?", "h" )) {
                 Help();
+                return;
+            }
+
+            if (files.Length == 0 || opts.ContainsAny("liststyles"))
+            {
+                ListStyles();
                 return;
             }
 
