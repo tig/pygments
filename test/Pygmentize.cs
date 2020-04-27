@@ -8,6 +8,7 @@ using System.Xml.Linq;
 namespace Pyg {
     using System.Collections;
     using System.Collections.Generic;
+    using System.Runtime.InteropServices;
     using FearTheCowboy.Pygments;
 
     public static class Extensions {
@@ -44,9 +45,44 @@ namespace Pyg {
         }
     }
 
+
+
     class Pygmentize {
+        private const int STD_OUTPUT_HANDLE = -11;
+        private const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
+        private const uint DISABLE_NEWLINE_AUTO_RETURN = 0x0008;
+
+        [DllImport("kernel32.dll")]
+        private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+
+        [DllImport("kernel32.dll")]
+        private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetStdHandle(int nStdHandle);
+
+        [DllImport("kernel32.dll")]
+        public static extern uint GetLastError();
+
+        static void SetAnsiConsoleMode()
+        {
+            var iStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+            if (!GetConsoleMode(iStdOut, out uint outConsoleMode))
+            {
+                Console.WriteLine("failed to get output console mode");
+                return;
+            }
+
+            outConsoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
+            if (!SetConsoleMode(iStdOut, outConsoleMode))
+            {
+                Console.WriteLine($"failed to set output console mode, error code: {GetLastError()}");
+                return;
+            }
+        }
+
         static void Help() {
-            Console.WriteLine("pygmentize [--liststyles | [--output=[html, bbcode, rtf, latex, terminal256] --style=<style> files]");
+            Console.WriteLine("pygmentize --console [--liststyles | [--output=[html, bbcode, rtf, latex, terminal256] --style=<style> files]");
         }
 
         static void ListStyles()
@@ -60,17 +96,20 @@ namespace Pyg {
         {
             var opts = args.Where(each => each.StartsWith("--")).Select( each=> each.TrimStart('-').ToLower()).ToArray();
             var files = args.Where(each => !each.StartsWith("--")).ToArray();
-            
+            bool writeToConsole = false;
+
+            if (files.Length == 0 && opts.Contains("liststyles"))
+            {
+                ListStyles();
+                return;
+            }
+
             if (files.Length == 0 || opts.ContainsAny("help", "?", "h" )) {
                 Help();
                 return;
             }
 
-            if (files.Length == 0 || opts.ContainsAny("liststyles"))
-            {
-                ListStyles();
-                return;
-            }
+            writeToConsole = opts.ContainsAny("console", "c");
 
             var language = opts.Value("language",null);
             var style = opts.Value("style","scite") ;
@@ -113,9 +152,18 @@ namespace Pyg {
                     case "16m":
                         foreach (var f in files)
                         {
-                            Console.WriteLine("Highlighting : [{0}] to [{0}.ans]", f);
-                            File.WriteAllText(f + ".ans",
-                                highlighter.HighlightToTerminal256(File.ReadAllText(f), language, style, f));
+                            if (writeToConsole)
+                            {
+                                SetAnsiConsoleMode();
+                                var output = highlighter.HighlightToTerminal256(File.ReadAllText(f), language, style, f);
+                                Console.Write(output.Replace("\n", "\r\n"));
+                            }
+                            else
+                            {
+                                Console.WriteLine("Highlighting : [{0}] to [{0}.ans]", f);
+                                File.WriteAllText(f + ".ans",
+                                    highlighter.HighlightToTerminal256(File.ReadAllText(f), language, style, f));
+                            }
                         }
                         break;
                     default:
